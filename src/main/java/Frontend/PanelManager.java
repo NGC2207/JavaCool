@@ -1,25 +1,63 @@
 package Frontend;
 
+import util.backend.BEHelper;
+
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
 
 public class PanelManager {
+    private static final int SCREEN_WIDTH_DIVISOR = 8;
+    private static final String[] DETAILS_TABS = {"Question", "Details"};
+    private static final String[] EDITOR_TABS = {"Compile", "Run", "Output"};
+    private static JList<String> problemList;
+    private static JScrollPane problemListScrollPane;
+
     public static void setupPanels(JFrame mainFrame) {
         JPanel detailsPanel = createDetailsPanel();
-        JSplitPane editorPanel = createEditorPanel(); // 修改此处，将 editorPanel 设置为 JSplitPane
+        JSplitPane editorPanel = createEditorPanel();
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, detailsPanel, editorPanel);
-        splitPane.setDividerLocation(Toolkit.getDefaultToolkit().getScreenSize().width / 8 * 3);
+        splitPane.setDividerLocation(Toolkit.getDefaultToolkit().getScreenSize().width / SCREEN_WIDTH_DIVISOR+50);
         mainFrame.add(splitPane, BorderLayout.CENTER);
+
+        // Manually initialize and add problemListScrollPane
+        try {
+            resetProblemList();
+            JTabbedPane detailsTabbedPane = (JTabbedPane) detailsPanel.getComponent(0);
+            detailsTabbedPane.setComponentAt(0, problemListScrollPane);
+        } catch (IOException e) {
+            handleIOException(e); // Handle exception appropriately
+        }
     }
 
     private static JPanel createDetailsPanel() {
         JPanel panel = new JPanel();
         JTabbedPane detailsTabbedPane = new JTabbedPane();
-        detailsTabbedPane.addTab("question", new JPanel());
-        detailsTabbedPane.addTab("details", new JPanel());
+        for (String tab : DETAILS_TABS) {
+            detailsTabbedPane.addTab(tab, new JPanel());
+        }
         panel.setLayout(new BorderLayout());
         panel.add(detailsTabbedPane, BorderLayout.CENTER);
+
+        // Add change listener to detect tab changes
+        detailsTabbedPane.addChangeListener(e -> {
+            JTabbedPane sourceTabbedPane = (JTabbedPane) e.getSource();
+            int selectedIndex = sourceTabbedPane.getSelectedIndex();
+            if (selectedIndex == 0) { // If "Question" tab is selected
+                try {
+                    resetProblemList();
+                    detailsTabbedPane.setComponentAt(0, problemListScrollPane); // Show problemListScrollPane
+                } catch (IOException ex) {
+                    handleIOException(ex); // Handle exception appropriately
+                }
+            }
+        });
+
         return panel;
     }
 
@@ -30,16 +68,72 @@ public class PanelManager {
         editorTextArea.setWrapStyleWord(true);
         editorTextArea.setFont(new Font("Consolas", Font.PLAIN, 32));
         JTabbedPane editorTabbedPane = new JTabbedPane();
-        editorTabbedPane.addTab("compile", new JPanel()); // 添加一个空面板示例
-        editorTabbedPane.addTab("run", new JPanel()); // 添加一个空面板示例
+        for (String tab : EDITOR_TABS) {
+            editorTabbedPane.addTab(tab, new JPanel());
+        }
 
-        // 创建一个新的 JSplitPane，垂直分割
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(editorTextArea), editorTabbedPane);
+        splitPane.setDividerLocation(Toolkit.getDefaultToolkit().getScreenSize().width / 3);
 
-        // 设置分隔条位置为屏幕宽度的 2/3 处
-        int dividerLocation = Toolkit.getDefaultToolkit().getScreenSize().width / 3 ;
-        splitPane.setDividerLocation(dividerLocation);
-
-        return splitPane; // 返回嵌套的 JSplitPane
+        return splitPane;
     }
+
+    private static void resetProblemList() throws IOException {
+        problemList = new JList<>(BEHelper.getNameOfAllProblem());
+        problemListScrollPane = new JScrollPane(problemList);
+
+        // Set cell renderer for problemList
+        problemList.setCellRenderer(new ProblemListCellRenderer());
+
+        // Add double click listener to problemList
+        problemList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) { // Check for double click
+                    JTabbedPane detailsTabbedPane = (JTabbedPane) SwingUtilities.getAncestorOfClass(JTabbedPane.class, problemListScrollPane);
+                    if (detailsTabbedPane != null) {
+                        detailsTabbedPane.setSelectedIndex(1); // Switch to "Details" tab
+                    }
+                    int index = problemList.locationToIndex(e.getPoint());
+                    try {
+                        // 创建一个不可编辑的 JTextArea，自动换行
+                        JTextArea textArea = new JTextArea(BEHelper.getInnerProblem(index + 1).toString());
+                        textArea.setFont(new Font("Consolas", Font.PLAIN, 32));
+                        textArea.setEditable(false);
+                        textArea.setLineWrap(true); // 启用自动换行
+                        textArea.setWrapStyleWord(true); // 根据单词换行
+                        JScrollPane scrollPane = new JScrollPane(textArea); // 使用 JTextArea 创建 JScrollPane
+                        detailsTabbedPane.setComponentAt(1, scrollPane);
+                    } catch (IOException ex) {
+                        handleIOException(ex); // Handle exception appropriately
+                    }
+                }
+            }
+        });
+    }
+
+    private static class ProblemListCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            label.setFont(new Font("Consolas", Font.PLAIN, 32));
+            label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            label.setPreferredSize(new Dimension(0, label.getPreferredSize().height)); // 设置单元格宽度自适应
+            label.setHorizontalAlignment(SwingConstants.LEFT); // 左对齐
+            label.setVerticalAlignment(SwingConstants.TOP); // 顶部对齐
+            label.setOpaque(true);
+            label.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+            label.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+            label.setText("<html><body style='width: 300px'>" + value + "</body></html>"); // 设置HTML以支持自动换行
+            return label;
+        }
+    }
+
+    private static void handleIOException(IOException ex) {
+        // Handle IOException appropriately
+        ex.printStackTrace();
+    }
+
+
+
 }

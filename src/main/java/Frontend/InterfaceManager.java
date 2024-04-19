@@ -29,13 +29,7 @@ public class InterfaceManager {
         return mainFrame;
     }
 
-    public static void main(String[] args) {
-        InterfaceManager interfaceManager = new InterfaceManager();
-        interfaceManager.display();
-        interfaceManager.setupComponents();
-    }
-
-    private void setupComponents() {
+    public void setupComponents() {
         ToolbarManager.setupToolbar(mainFrame);
         PanelManager.setupPanels(mainFrame);
     }
