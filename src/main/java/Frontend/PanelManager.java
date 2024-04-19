@@ -40,13 +40,12 @@ public class PanelManager {
         splitPane.setDividerLocation(Toolkit.getDefaultToolkit().getScreenSize().width / SCREEN_WIDTH_DIVISOR+50);
         mainFrame.add(splitPane, BorderLayout.CENTER);
 
-        // Manually initialize and add problemListScrollPane
         try {
             resetProblemList();
             JTabbedPane detailsTabbedPane = (JTabbedPane) detailsPanel.getComponent(0);
             detailsTabbedPane.setComponentAt(0, problemListScrollPane);
         } catch (IOException e) {
-            handleIOException(e); // Handle exception appropriately
+            handleIOException(e);
         }
     }
 
@@ -59,16 +58,15 @@ public class PanelManager {
         panel.setLayout(new BorderLayout());
         panel.add(detailsTabbedPane, BorderLayout.CENTER);
 
-        // Add change listener to detect tab changes
         detailsTabbedPane.addChangeListener(e -> {
             JTabbedPane sourceTabbedPane = (JTabbedPane) e.getSource();
             int selectedIndex = sourceTabbedPane.getSelectedIndex();
-            if (selectedIndex == 0) { // If "Question" tab is selected
+            if (selectedIndex == 0) {
                 try {
                     resetProblemList();
-                    detailsTabbedPane.setComponentAt(0, problemListScrollPane); // Show problemListScrollPane
+                    detailsTabbedPane.setComponentAt(0, problemListScrollPane);
                 } catch (IOException ex) {
-                    handleIOException(ex); // Handle exception appropriately
+                    handleIOException(ex);
                 }
             }
         });
@@ -84,8 +82,7 @@ public class PanelManager {
         editorTextArea.setFont(new Font("Consolas", Font.PLAIN, 32));
         JTabbedPane editorTabbedPane = new JTabbedPane();
         for (String tab : EDITOR_TABS) {
-            // Check if the tab is "Compile"
-            // Create a non-editable JTextArea for Compile tab
+
             compileTextArea = new JTextArea();
             compileTextArea.setEditable(false); // 设置为不可编辑
             compileTextArea.setFont(new Font("Consolas", Font.PLAIN, 32)); // 设置字体大小为32
@@ -103,17 +100,15 @@ public class PanelManager {
         problemList = new JList<>(BEHelper.getNameOfAllProblem());
         problemListScrollPane = new JScrollPane(problemList);
 
-        // Set cell renderer for problemList
         problemList.setCellRenderer(new ProblemListCellRenderer());
 
-        // Add double click listener to problemList
         problemList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) { // Check for double click
+                if (e.getClickCount() == 2) {
                     JTabbedPane detailsTabbedPane = (JTabbedPane) SwingUtilities.getAncestorOfClass(JTabbedPane.class, problemListScrollPane);
                     if (detailsTabbedPane != null) {
-                        detailsTabbedPane.setSelectedIndex(1); // Switch to "Details" tab
+                        detailsTabbedPane.setSelectedIndex(1);
                     }
                     indexOfQuestion = problemList.locationToIndex(e.getPoint());
                     try {
@@ -126,7 +121,7 @@ public class PanelManager {
                         JScrollPane scrollPane = new JScrollPane(textArea); // 使用 JTextArea 创建 JScrollPane
                         detailsTabbedPane.setComponentAt(1, scrollPane);
                     } catch (IOException ex) {
-                        handleIOException(ex); // Handle exception appropriately
+                        handleIOException(ex);
                     }
                 }
             }
@@ -151,7 +146,6 @@ public class PanelManager {
     }
 
     private static void handleIOException(IOException ex) {
-        // Handle IOException appropriately
         ex.printStackTrace();
     }
 }
