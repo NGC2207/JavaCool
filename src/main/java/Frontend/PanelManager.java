@@ -13,9 +13,24 @@ import java.io.IOException;
 public class PanelManager {
     private static final int SCREEN_WIDTH_DIVISOR = 8;
     private static final String[] DETAILS_TABS = {"Question", "Details"};
-    private static final String[] EDITOR_TABS = {"Compile", "Run", "Output"};
+    private static final String[] EDITOR_TABS = {"Output"};
     private static JList<String> problemList;
     private static JScrollPane problemListScrollPane;
+    private static JTextArea editorTextArea;
+    private static JTextArea compileTextArea;
+    private static int indexOfQuestion;
+
+    public static int getIndexOfQuestion(){
+        return indexOfQuestion;
+    }
+
+    public static JTextArea getCompileTextArea(){
+        return compileTextArea;
+    }
+
+    public static JTextArea getEditorTextArea(){
+        return editorTextArea;
+    }
 
     public static void setupPanels(JFrame mainFrame) {
         JPanel detailsPanel = createDetailsPanel();
@@ -63,13 +78,19 @@ public class PanelManager {
 
     private static JSplitPane createEditorPanel() {
         JPanel panel = new JPanel();
-        JTextArea editorTextArea = new JTextArea();
+        editorTextArea = new JTextArea();
         editorTextArea.setLineWrap(true);
         editorTextArea.setWrapStyleWord(true);
         editorTextArea.setFont(new Font("Consolas", Font.PLAIN, 32));
         JTabbedPane editorTabbedPane = new JTabbedPane();
         for (String tab : EDITOR_TABS) {
-            editorTabbedPane.addTab(tab, new JPanel());
+            // Check if the tab is "Compile"
+            // Create a non-editable JTextArea for Compile tab
+            compileTextArea = new JTextArea();
+            compileTextArea.setEditable(false); // 设置为不可编辑
+            compileTextArea.setFont(new Font("Consolas", Font.PLAIN, 32)); // 设置字体大小为32
+            JScrollPane compileScrollPane = new JScrollPane(compileTextArea);
+            editorTabbedPane.addTab(tab, compileScrollPane);
         }
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(editorTextArea), editorTabbedPane);
@@ -94,10 +115,10 @@ public class PanelManager {
                     if (detailsTabbedPane != null) {
                         detailsTabbedPane.setSelectedIndex(1); // Switch to "Details" tab
                     }
-                    int index = problemList.locationToIndex(e.getPoint());
+                    indexOfQuestion = problemList.locationToIndex(e.getPoint());
                     try {
                         // 创建一个不可编辑的 JTextArea，自动换行
-                        JTextArea textArea = new JTextArea(BEHelper.getInnerProblem(index + 1).toString());
+                        JTextArea textArea = new JTextArea(BEHelper.getInnerProblem(indexOfQuestion + 1).toString());
                         textArea.setFont(new Font("Consolas", Font.PLAIN, 32));
                         textArea.setEditable(false);
                         textArea.setLineWrap(true); // 启用自动换行
@@ -133,7 +154,4 @@ public class PanelManager {
         // Handle IOException appropriately
         ex.printStackTrace();
     }
-
-
-
 }

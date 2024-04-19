@@ -13,7 +13,8 @@
     ""
   ],
   "expectedAnswer": [
-    "Hello World"
+    "Hello World",
+    "Hello World\n"
   ],
   "timeLimit": 1024,
   "memoryLimit": 1024
